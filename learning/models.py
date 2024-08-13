@@ -29,7 +29,7 @@ class Course(models.Model):
     students = models.ManyToManyField('Student', related_name='courses',
                                       blank=True)
     title = models.CharField(max_length=256)
-    frontPage = models.CharField(max_length=10240)
+    front_page = models.CharField(max_length=10240)
 
     def __str__(self):
         return f"{self.title}, taught by {self.instructor.user.username}"

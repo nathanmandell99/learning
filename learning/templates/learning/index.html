@@ -1,0 +1,21 @@
+{% extends "learning/layout.html" %}
+{% load static %}
+
+{% block body %}
+<div class="container">
+<h2>Welcome, {{user}}</2>
+  <h3>Courses where you are a student:</h3>
+  {% for course in student_courses %}
+  <p><a href="{% url 'course' course.id %}">{{course.title}}</a></p>
+  {% empty %}
+  <p>You are not enrolled in any courses.</p>
+  {% endfor %}
+
+  <h3>Courses where you are an instructor:</h3>
+  {% for course in instructor_courses %}
+  <p><a href="{% url 'course' course.id %}">{{course.title}}</a></p>
+  {% empty %}
+  <p>You are not teaching any courses.</p>
+  {% endfor %}
+</div>
+{% endblock %}

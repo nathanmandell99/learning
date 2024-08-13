@@ -1,0 +1,32 @@
+{% extends "learning/layout.html" %}
+{% load static %}
+
+{% block body %}
+
+  <div class="container">
+    <h2>Register</h2>
+    <form action="{% url 'register' %}" method="POST">
+      {% csrf_token %}
+      <div class="form-floating mb-3">
+          <input class="form-control" name="username" id="floatingInput">
+          <label for="floatingInput">Username</label>
+      </div>
+      <div class="form-floating mb-3">
+        <input type="password" class="form-control" name="password" id="floatingPassword" placeholder="Password">
+        <label for="floatingPassword">Password</label>
+      </div>
+      <div class="form-floating mb-3">
+        <input type="password" class="form-control" name="confirmation" id="floatingPassword" placeholder="Password">
+        <label for="floatingPassword">Confirm Password</label>
+      </div>
+      <input class="btn btn-primary" type="submit" value="Login">
+    </form>
+
+    <p>Have an account already? <a href="{% url 'login' %}">Log in.</a></p>
+
+    {% if message %}
+      <div class="err">{{message}}</div>
+    {% endif %}
+
+  </div>
+{% endblock %}
