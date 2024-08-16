@@ -1,5 +1,5 @@
 from django.shortcuts import render, reverse
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, FileResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
@@ -8,8 +8,66 @@ from .models import User, Student, Instructor, Course, Assignment, Submission, A
 
 # Create your views here.
 
-# View for a course. Pass the name of the course and its ID, to be used for
-# API calls.
+
+@login_required
+def get_attachment(request, course_id, assn_id):
+    assignment = Assignment.objects.get(pk=assn_id)
+    attachment = assignment.attachment
+    return FileResponse(open(attachment.url[1:], "rb"), as_attachment=True)
+
+
+# Get assignments for previewing. We should also get grades
+# associated with each...
+@login_required
+def get_assignments(request, course_id, assn_id=None):
+    try:
+        if assn_id:
+            assignment = Assignment.objects.get(pk=assn_id)
+            try:
+                assignment.submissions.get(student=request.user.student)
+                submitted = True
+            except Submission.DoesNotExist:
+                submitted = False
+            return JsonResponse(
+                {"assignment": assignment.serialize(),
+                 "submitted": submitted})
+
+        else:
+            course = Course.objects.get(pk=course_id)
+            assignments = Assignment.objects.filter(course=course)
+            assignments = assignments.order_by("-timestamp").all()
+            print(assignments)
+            return JsonResponse({"assignments": [assn.serialize() for assn in assignments]})
+
+    except Course.DoesNotExist:
+        return JsonResponse({"error": "Course does not exist."})
+    except Assignment.DoesNotExist:
+        return JsonResponse({"error": "Assignment does not exist."})
+
+
+# Get the body of a course's front page.
+@login_required
+def get_announcements(request, course_id, ann_id=None):
+    try:
+        if ann_id:
+            announcement = Announcement.objects.get(pk=ann_id)
+            return JsonResponse(announcement.serialize())
+
+        else:
+            course = Course.objects.get(pk=course_id)
+            announcements = Announcement.objects.filter(course=course)
+            announcements = announcements.order_by("-timestamp").all()
+            print(announcements)
+            return JsonResponse({"announcements": [ann.serialize() for ann in announcements]})
+
+    except Course.DoesNotExist:
+        return JsonResponse({"error": "Course does not exist."})
+    except Announcement.DoesNotExist:
+        return JsonResponse({"error": "Announcement does not exist."})
+
+
+# View for a course. Provides both the course and whether or not
+# the user is the instructor for that course.
 @login_required
 def course(request, course_id):
     try:
@@ -20,6 +78,9 @@ def course(request, course_id):
         })
 
     except Course.DoesNotExist:
+        return render(request, "learning/course.html", {
+            "message": f"404: No course with id {course_id}"
+        })
         pass
         # Render a 404
 

@@ -42,6 +42,15 @@ class Announcement(models.Model):
     course = models.ForeignKey('Course', on_delete=models.CASCADE,
                                related_name='announcements')
 
+    def serialize(self):
+        return {
+            "title": self.title,
+            "body": self.body,
+            "timestamp": f"{self.timestamp.month}/{self.timestamp.day}/{self.timestamp.year}, {self.timestamp.time().strftime("%H:%M")}",
+            "courseID": self.course.id,
+            "id": self.id
+        }
+
     def __str__(self):
         return f"{self.course.title}: {self.title}"
 
@@ -54,6 +63,20 @@ class Assignment(models.Model):
                                related_name='assignments')
 
     attachment = models.FileField(upload_to=utils.get_path, blank=True)
+
+    def serialize(self):
+        if self.attachment:
+            attachment_name = self.attachment.name.split('/')[-1]
+        else:
+            attachment_name = "None"
+        return {
+            "title": self.title,
+            "body": self.body,
+            "timestamp": f"{self.timestamp.month}/{self.timestamp.day}/{self.timestamp.year}, {self.timestamp.time().strftime("%H:%M")}",
+            "courseID": self.course.id,
+            "id": self.id,
+            "attachment": attachment_name
+        }
 
     def __str__(self):
         return f"{self.course.title}: {self.title}"
@@ -81,5 +104,5 @@ class Submission(models.Model):
     attachment = models.FileField(upload_to=utils.get_path, blank=True)
     body = models.CharField(max_length=10240, blank=True)
     grade = models.IntegerField(validators=[MaxValueValidator(100)],
-                                blank=True)
+                                blank=True, null=True)
     graded = models.BooleanField(default=False)

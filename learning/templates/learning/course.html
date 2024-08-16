@@ -3,11 +3,36 @@
 
 {% block body %}
 
-<div class=container>
-  <h2>{{ course.title }}</h2>
+<!-- Sidebar adapted from: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_sidebar_responsive -->
+{% if message %}
+<div class="container">
+  <h4 class="err">{{ message }}</h4>
 </div>
+{% else %}
+<div class="sidebar">
+  <a class="active" id="description-tab" href="#">Course Description</a>
+  <a href="#" id="announcements-tab">Announcements</a>
+  <a href="#" id="assignments-tab">Assignments</a>
+  <a href="#" id="submissions-tab">Submissions</a>
+</div>
+<div class="content container">
+  <div class="title">
+    <h2>{{ course.title }}</h2>
+  </div>
 
-<div id="course-view">
+  <div id="content-view">
+  </div>
 </div>
+{% endif %}
+
+{% block script %}
+<script src="{% static 'learning/course.js' %}"></script>
+<script>
+  const courseID = {{ course.id }};
+  const userID = {{ user.id }};
+  const body = "{{course.front_page}}"
+  const courseView = document.querySelector('#content-view');
+</script>
+{% endblock %}
 
 {% endblock %}
