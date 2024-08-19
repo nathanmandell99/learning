@@ -62,7 +62,8 @@ class Assignment(models.Model):
     course = models.ForeignKey('Course', on_delete=models.CASCADE,
                                related_name='assignments')
 
-    attachment = models.FileField(upload_to=utils.get_path, blank=True)
+    attachment = models.FileField(
+        upload_to=utils.get_path_assignment, blank=True)
 
     def serialize(self):
         if self.attachment:
@@ -101,8 +102,25 @@ class Submission(models.Model):
     assignment = models.ForeignKey('Assignment', on_delete=models.CASCADE,
                                    related_name='submissions')
     timestamp = models.DateTimeField(auto_now_add=True)
-    attachment = models.FileField(upload_to=utils.get_path, blank=True)
+    attachment = models.FileField(upload_to=utils.get_path_submission,
+                                  blank=True)
     body = models.CharField(max_length=10240, blank=True)
     grade = models.IntegerField(validators=[MaxValueValidator(100)],
-                                blank=True, null=True)
+                                blank=True, null=True, default=None)
     graded = models.BooleanField(default=False)
+
+    def serialize(self):
+        if self.attachment:
+            attachment_name = self.attachment.name.split('/')[-1]
+        else:
+            attachment_name = "None"
+        return {
+            "studentID": self.student.id,
+            "courseID": self.course.id,
+            "assignmentID": self.assignment.id,
+            "timestamp": f"{self.timestamp.month}/{self.timestamp.day}/{self.timestamp.year}, {self.timestamp.time().strftime("%H:%M")}",
+            "body": self.body,
+            "attachment": attachment_name,
+            "grade": self.grade,
+            "graded": self.grade
+        }

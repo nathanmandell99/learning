@@ -1,12 +1,36 @@
-from django.shortcuts import render, reverse
+from django.shortcuts import render, reverse, redirect
 from django.http import HttpResponseRedirect, JsonResponse, FileResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from django.views.decorators.csrf import csrf_exempt
 from .models import User, Student, Instructor, Course, Assignment, Submission, Announcement
 
 
 # Create your views here.
+
+
+# We need to check for a file and for a body, then we need to
+# make a new submission with the received data and save it.
+@csrf_exempt
+@login_required
+def submit_assignment(request, course_id, assn_id):
+    # This works for submitting the typed assignment.
+    # Now we have to figure out how to add the file...
+    typed = request.POST['typed']
+    attachment = request.FILES['attachment']
+    print(request.FILES)
+    print(attachment)
+    course = Course.objects.get(pk=course_id)
+    assignment = Assignment.objects.get(pk=assn_id)
+    student = request.user.student
+    submission = Submission(student=student, course=course,
+                            assignment=assignment, attachment=attachment,
+                            body=typed)
+    submission.save()
+    print(submission)
+    return redirect("course", 1)
+    pass
 
 
 @login_required
@@ -24,25 +48,52 @@ def get_assignments(request, course_id, assn_id=None):
         if assn_id:
             assignment = Assignment.objects.get(pk=assn_id)
             try:
-                assignment.submissions.get(student=request.user.student)
-                submitted = True
+                submission = assignment.submissions.get(
+                    student=request.user.student)
+                grade = submission.grade
+                return JsonResponse(
+                    {"assignment": assignment.serialize(),
+                     "submitted": True,
+                     "grade": grade}, status=201)
             except Submission.DoesNotExist:
-                submitted = False
-            return JsonResponse(
-                {"assignment": assignment.serialize(),
-                 "submitted": submitted})
+                return JsonResponse(
+                    {"assignment": assignment.serialize(),
+                     "submitted": False}, status=201)
 
         else:
             course = Course.objects.get(pk=course_id)
             assignments = Assignment.objects.filter(course=course)
             assignments = assignments.order_by("-timestamp").all()
-            print(assignments)
-            return JsonResponse({"assignments": [assn.serialize() for assn in assignments]})
+            assn_list = []
+            for assn in assignments:
+                # This data depends on the user who made the request
+                # and thus cannot be accounted for in the serialze function.
+                # It must be retrieved when the request is made.
+                serialized = assn.serialize()
+                try:
+                    submission = assn.submissions.get(
+                        student=request.user.student)
+                    grade = submission.grade
+                    if grade is None:
+                        serialized['grade'] = "None"
+                    else:
+                        serialized['grade'] = grade
+
+                    serialized['submitted'] = True
+                except Submission.DoesNotExist:
+                    serialized['grade'] = "None"
+                    serialized['submitted'] = False
+
+                assn_list.append(serialized)
+
+            return JsonResponse({"assignments": assn_list},
+                                status=201)
 
     except Course.DoesNotExist:
-        return JsonResponse({"error": "Course does not exist."})
+        return JsonResponse({"error": "Course does not exist."}, status=400)
     except Assignment.DoesNotExist:
-        return JsonResponse({"error": "Assignment does not exist."})
+        return JsonResponse({"error": "Assignment does not exist."},
+                            status=400)
 
 
 # Get the body of a course's front page.
@@ -58,12 +109,15 @@ def get_announcements(request, course_id, ann_id=None):
             announcements = Announcement.objects.filter(course=course)
             announcements = announcements.order_by("-timestamp").all()
             print(announcements)
-            return JsonResponse({"announcements": [ann.serialize() for ann in announcements]})
+            return JsonResponse({"announcements": [
+                                ann.serialize() for ann in announcements]},
+                                status=201)
 
     except Course.DoesNotExist:
-        return JsonResponse({"error": "Course does not exist."})
+        return JsonResponse({"error": "Course does not exist."}, status=400)
     except Announcement.DoesNotExist:
-        return JsonResponse({"error": "Announcement does not exist."})
+        return JsonResponse({"error": "Announcement does not exist."},
+                            status=400)
 
 
 # View for a course. Provides both the course and whether or not
@@ -79,9 +133,8 @@ def course(request, course_id):
 
     except Course.DoesNotExist:
         return render(request, "learning/course.html", {
-            "message": f"404: No course with id {course_id}"
-        })
-        pass
+            "message": f"404: No course with id {course_id}"},
+            status=404)
         # Render a 404
 
 

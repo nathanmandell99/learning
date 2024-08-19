@@ -6,6 +6,10 @@
   border-bottom: 1px dotted grey;
 }
 
+.btn.btn-primary {
+  margin-block: 1rem;
+}
+
 /* Adapted from: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_sidebar_responsive*/
 body {
   margin: 0;
@@ -29,7 +33,7 @@ body {
 }
 
 .sidebar a.active {
-  background-color: #04AA6D;
+  background-color: #0d6efd;
   color: white;
 }
 

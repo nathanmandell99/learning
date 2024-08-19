@@ -15,10 +15,13 @@ urlpatterns = [
          views.get_announcements, name="getannouncements"),
     path("course/<int:course_id>/announcements/<int:ann_id>",
          views.get_announcements, name="getannouncement"),
+
     path("course/<int:course_id>/assignments",
          views.get_assignments, name="getassignments"),
     path("course/<int:course_id>/assignments/<int:assn_id>",
          views.get_assignments, name="getassignment"),
     path("course/<int:course_id>/assignments/<int:assn_id>/attachment",
-         views.get_attachment, name="getattachment")
+         views.get_attachment, name="getattachment"),
+    path("course/<int:course_id>/assignments/<int:assn_id>/submit",
+         views.submit_assignment, name="submitassignment"),
 ]

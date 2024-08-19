@@ -38,6 +38,10 @@ async function eventDelegator() {
     else if (event.target.id === "back-assn") {
       displayAssignments();
     }
+    else if (event.target.id === "sbmit-btn") {
+      // Send the file to a backend API.
+      // ...but how do we get the file?
+    }
 
   });
 }
@@ -202,12 +206,22 @@ async function displayAssignment(response) {
   }
   if (!response['submitted']) {
     courseView.innerHTML += `
-      <form>
-        <input type="file" id="sbmit-assn" name="submission"> <br>
-        <input type="submit" class="btn btn-primary" value="Submit Assignment">
-      </form>
-      <p><a id="back-assn" href="#">Back</a></p>`;
+      <h5>Upload Assignment</h5>
+      <form action="/course/${courseID}/assignments/${assignment['id']}/submit" method=POST enctype="multipart/form-data">
+        <input type="file" id="sbmit-assn" name="attachment"> <br>
+        <p>Or type assignment:</p>
+        <div class="input-group">
+          <textarea class="form-control" name="typed" placeholder="Type your assignment"></textarea>
+        </div>
+        <input type="submit" id="sbmit-btn" class="btn btn-primary" value="Submit Assignment">
+      </form>`
   }
+  else {
+    courseView.innerHTML += `
+      <p>Assignment submitted. Check submissions tab.</p>
+    `
+  }
+  courseView.innerHTML += `<p><a id="back-assn" href="#">Back</a></p>`;
 
 }
 
