@@ -21,18 +21,24 @@
   </div>
 
   <div id="content-view">
+  {% if is_instructor %}
+  <p>You are an instructor!</p>
+  {% endif %}
   </div>
 </div>
 
+{% if not is_instructor %}
 {% block script %}
 <script src="{% static 'learning/course.js' %}"></script>
 <script>
   const courseID = {{ course.id }};
   const userID = {{ user.id }};
+  const studentID = {{ user.student.id }}
   const body = "{{course.front_page}}"
   const courseView = document.querySelector('#content-view');
 </script>
 {% endblock %}
+{% endif %}
 {% endif %}
 
 {% endblock %}

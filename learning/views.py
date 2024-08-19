@@ -6,8 +6,30 @@ from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 from .models import User, Student, Instructor, Course, Assignment, Submission, Announcement
 
+# from markdown2 import markdown
+
 
 # Create your views here.
+
+
+@login_required
+def get_submissions(request, course_id, student_id=None, sbmsn_id=None):
+    try:
+        if sbmsn_id:
+            submission = Submission.objects.get(pk=sbmsn_id)
+            return JsonResponse({"submission": submission.serialize()})
+
+        else:
+            course = Course.objects.get(pk=course_id)
+            student = Student.objects.get(pk=student_id)
+            submissions = Submission.objects.filter(
+                course=course, student=student)
+            print(submissions)
+            return JsonResponse({"submissions": [
+                sbmsn.serialize() for sbmsn in submissions]}, status=201)
+
+    except Submission.DoesNotExist:
+        pass
 
 
 # We need to check for a file and for a body, then we need to
@@ -17,26 +39,35 @@ from .models import User, Student, Instructor, Course, Assignment, Submission, A
 def submit_assignment(request, course_id, assn_id):
     # This works for submitting the typed assignment.
     # Now we have to figure out how to add the file...
-    typed = request.POST['typed']
-    attachment = request.FILES['attachment']
-    print(request.FILES)
-    print(attachment)
+    student = request.user.student
     course = Course.objects.get(pk=course_id)
     assignment = Assignment.objects.get(pk=assn_id)
-    student = request.user.student
+    # Uhhh how do I find out if there is already a Submission
+    # for this assignment
+    if assignment.submissions.filter(student=student) is not None:
+        return JsonResponse({"message": "Error: a submission already exists."},
+                            status=400)
+    typed = request.POST['typed']
+    try:
+        attachment = request.FILES['attachment']
+    except:
+        attachment = "None"
     submission = Submission(student=student, course=course,
                             assignment=assignment, attachment=attachment,
                             body=typed)
     submission.save()
-    print(submission)
     return redirect("course", 1)
-    pass
 
 
 @login_required
-def get_attachment(request, course_id, assn_id):
-    assignment = Assignment.objects.get(pk=assn_id)
-    attachment = assignment.attachment
+def get_attachment(request, course_id, assn_id=None, sbmsn_id=None):
+    if sbmsn_id:
+        submission = Submission.objects.get(pk=sbmsn_id)
+        attachment = submission.attachment
+        pass
+    else:
+        assignment = Assignment.objects.get(pk=assn_id)
+        attachment = assignment.attachment
     return FileResponse(open(attachment.url[1:], "rb"), as_attachment=True)
 
 
@@ -135,12 +166,10 @@ def course(request, course_id):
         return render(request, "learning/course.html", {
             "message": f"404: No course with id {course_id}"},
             status=404)
-        # Render a 404
 
 
 @login_required
 def index(request):
-    # print(request.user.student.courses.filter(students=request.user.student))
     student_courses = request.user.student.courses.filter(
         students=request.user.student)
     instructor_courses = request.user.instructor.courses.filter(

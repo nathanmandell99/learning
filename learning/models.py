@@ -109,18 +109,22 @@ class Submission(models.Model):
                                 blank=True, null=True, default=None)
     graded = models.BooleanField(default=False)
 
+    comments = models.CharField(max_length=10240, blank=True, default="None")
+
     def serialize(self):
         if self.attachment:
             attachment_name = self.attachment.name.split('/')[-1]
         else:
             attachment_name = "None"
         return {
+            "id": self.id,
             "studentID": self.student.id,
             "courseID": self.course.id,
-            "assignmentID": self.assignment.id,
+            "assignmentName": self.assignment.title,
             "timestamp": f"{self.timestamp.month}/{self.timestamp.day}/{self.timestamp.year}, {self.timestamp.time().strftime("%H:%M")}",
             "body": self.body,
             "attachment": attachment_name,
+            "comments": self.comments,
             "grade": self.grade,
-            "graded": self.grade
+            "graded": self.graded
         }
