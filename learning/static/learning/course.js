@@ -1,19 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
   // From here we can use API calls to retrieve everything we need to know about the course.
-  const descTab = document.querySelector('#description-tab');
-  descTab.addEventListener('click', displaySyllabus);
+  if (isEnrolled || isInstructor) {
+    console.log('Student is enrolled.');
+    const descTab = document.querySelector('#description-tab');
+    descTab.addEventListener('click', displaySyllabus);
 
-  const annTab = document.querySelector('#announcements-tab');
-  annTab.addEventListener('click', displayAnnouncements);
+    const annTab = document.querySelector('#announcements-tab');
+    annTab.addEventListener('click', displayAnnouncements);
 
-  const assTab = document.querySelector('#assignments-tab');
-  assTab.addEventListener('click', displayAssignments);
+    const assTab = document.querySelector('#assignments-tab');
+    assTab.addEventListener('click', displayAssignments);
 
-  const submTab = document.querySelector('#submissions-tab');
-  submTab.addEventListener('click', displaySubmissions);
+    const submTab = document.querySelector('#submissions-tab');
+    submTab.addEventListener('click', displaySubmissions);
 
-  displaySyllabus();
-  eventDelegator();
+    displaySyllabus();
+    eventDelegator();
+  }
+  else {
+    courseView.innerHTML = `<h4 class="err">Error: You are not enrolled in this course.</h4>`
+  }
 })
 
 async function eventDelegator() {
@@ -50,11 +56,30 @@ async function eventDelegator() {
   });
 }
 
-function displaySyllabus() {
+// Perhaps this should be refactored to call a backend route...
+async function displaySyllabus() {
+  // console.log('userID');
   document.querySelector('.sidebar .active').classList.remove('active');
 
   document.querySelector('#description-tab').classList.add('active');
-  courseView.innerHTML = `<p>${body}</p>`;
+
+  try {
+    let response = await fetch(`/course/${courseID}/front-page`)
+    let result = await response.json()
+    console.log(result);
+
+    courseView.innerHTML = result['front_page'];
+    if (isInstructor) {
+      // Display button to edit syllabus
+      courseView.innerHTML += `
+      <p><a id="edit-syllabus" href="#">Edit</a></p>
+    `;
+    }
+
+  }
+  catch (error) {
+    console.log(error);
+  }
 
 }
 
@@ -330,17 +355,16 @@ async function displaySubmission(submission) {
       <p>${submission['grade']}/100</p>
       <h5>Instructor comments:</h5>
       <p>${submission['comments']}</p>
-      <hr>
     `;
   }
   else {
     courseView.innerHTML += `
     <h5><strong>Assignment currently awaiting grading.</strong></h5>
-    <hr>
     `;
   }
   courseView.innerHTML +=
-    `<h5>What you submitted:</h5>
+    `<hr>
+    <h5>What you submitted:</h5>
     <p>${submission['body']}</p>
     <h6>Attachment:</h6>`;
 

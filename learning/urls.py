@@ -8,6 +8,7 @@ urlpatterns = [
     path("register", views.register, name="register"),
     path("logout", views.logout_view, name="logout"),
     path("course/<int:course_id>", views.course, name="course"),
+    path("course/new", views.new_course, name="newcourse"),
 
     # APIs
 
@@ -31,4 +32,7 @@ urlpatterns = [
          views.get_submissions, name="get_submission"),
     path("course/<int:course_id>/submissions/<int:sbmsn_id>/attachment",
          views.get_attachment, name="get_sbmsn_attachment"),
+
+    path("course/<int:course_id>/front-page",
+         views.get_front_page, name="get_front_page")
 ]

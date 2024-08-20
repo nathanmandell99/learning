@@ -29,7 +29,7 @@ class Course(models.Model):
     students = models.ManyToManyField('Student', related_name='courses',
                                       blank=True)
     title = models.CharField(max_length=256)
-    front_page = models.CharField(max_length=10240)
+    front_page = models.TextField(max_length=10240)
 
     def __str__(self):
         return f"{self.title}, taught by {self.instructor.user.username}"
@@ -83,12 +83,21 @@ class Assignment(models.Model):
         return f"{self.course.title}: {self.title}"
 
 
-# class Quiz(models.Model):
-    # pass
+class Quiz(models.Model):
+    course = models.ForeignKey('Course', on_delete=models.CASCADE,
+                               related_name='quizzes')
 
 
-# class MultChoiceQuestion(models.Model):
-    # pass
+class Question(models.Model):
+    choices = {
+        "A1": "",
+        "A2": "",
+        "A3": "",
+        "A4": "",
+    }
+    answer = models.CharField(max_length=256, blank=False, choices=choices)
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE,
+                             related_name='questions')
 
 
 # How can we make it so that finding the submission of a specific student for

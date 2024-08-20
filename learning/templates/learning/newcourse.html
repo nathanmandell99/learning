@@ -1,0 +1,15 @@
+{% extends "learning/layout.html" %}
+{% load static %}
+
+{% block body %}
+
+<div class="container">
+  <div id="new-course" class="input-group">
+    <form action="{% url 'newcourse' %}" method="POST">
+      {{ form }}
+      <input class="btn btn-primary" type="submit" value="Submit">
+    </form>
+  </div>
+</div>
+
+{% endblock %}

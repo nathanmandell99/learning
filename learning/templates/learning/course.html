@@ -27,18 +27,18 @@
   </div>
 </div>
 
-{% if not is_instructor %}
 {% block script %}
-<script src="{% static 'learning/course.js' %}"></script>
 <script>
   const courseID = {{ course.id }};
   const userID = {{ user.id }};
-  const studentID = {{ user.student.id }}
-  const body = "{{course.front_page}}"
+  const studentID = {{ user.student.id }};
+  const body = `{{course.front_page|safe}}`;
   const courseView = document.querySelector('#content-view');
+  const isEnrolled = ("{{ is_student }}" === "True") ? true : false;
+  const isInstructor = ("{{ is_instructor }}" === "True") ? true : false;
 </script>
+<script src="{% static 'learning/course.js' %}"></script>
 {% endblock %}
-{% endif %}
 {% endif %}
 
 {% endblock %}

@@ -4,12 +4,25 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
+from django import forms
+from django.forms import Textarea
+
 from .models import User, Student, Instructor, Course, Assignment, Submission, Announcement
 
-# from markdown2 import markdown
+from markdown2 import Markdown
+
+markdowner = Markdown()
 
 
 # Create your views here.
+class CourseForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        fields = ['instructor', 'title', 'front_page', 'students']
+        widgets = {
+            'front_page': Textarea(attrs={'class': 'textField'}),
+            'instructor': forms.HiddenInput(),
+        }
 
 
 @login_required
@@ -29,7 +42,8 @@ def get_submissions(request, course_id, student_id=None, sbmsn_id=None):
                 sbmsn.serialize() for sbmsn in submissions]}, status=201)
 
     except Submission.DoesNotExist:
-        pass
+        return JsonResponse({"message": "Error: Submission does not exist."},
+                            status=400)
 
 
 # We need to check for a file and for a body, then we need to
@@ -56,7 +70,7 @@ def submit_assignment(request, course_id, assn_id):
                             assignment=assignment, attachment=attachment,
                             body=typed)
     submission.save()
-    return redirect("course", 1)
+    return redirect("course", course_id)
 
 
 @login_required
@@ -79,6 +93,7 @@ def get_assignments(request, course_id, assn_id=None):
         if assn_id:
             assignment = Assignment.objects.get(pk=assn_id)
             try:
+                assignment.body = markdowner.convert(assignment.body)
                 submission = assignment.submissions.get(
                     student=request.user.student)
                 grade = submission.grade
@@ -127,12 +142,12 @@ def get_assignments(request, course_id, assn_id=None):
                             status=400)
 
 
-# Get the body of a course's front page.
 @login_required
 def get_announcements(request, course_id, ann_id=None):
     try:
         if ann_id:
             announcement = Announcement.objects.get(pk=ann_id)
+            announcement.body = markdowner.convert(announcement.body)
             return JsonResponse(announcement.serialize())
 
         else:
@@ -151,6 +166,29 @@ def get_announcements(request, course_id, ann_id=None):
                             status=400)
 
 
+@csrf_exempt
+@login_required
+def new_course(request):
+    if request.method == "POST":
+        form = CourseForm(request.POST)
+        newcourse = form.save()
+        return redirect("course", newcourse.id)
+        # Save the new course
+    return render(request, "learning/newcourse.html",
+                  {"form": CourseForm(initial={'instructor': request.user.instructor})
+                   })
+
+
+@login_required
+def get_front_page(request, course_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+        course.front_page = markdowner.convert(course.front_page)
+        return JsonResponse({"front_page": course.front_page}, status=201)
+    except Course.DoesNotExist:
+        return JsonResponse({"error": "Course does not exist."}, status=400)
+
+
 # View for a course. Provides both the course and whether or not
 # the user is the instructor for that course.
 @login_required
@@ -159,7 +197,8 @@ def course(request, course_id):
         course = Course.objects.get(pk=course_id)
         return render(request, "learning/course.html", {
             "course": course,
-            "is_instructor": (request.user.instructor == course.instructor)
+            "is_instructor": (request.user.instructor == course.instructor),
+            "is_student": (request.user.student in course.students.all())
         })
 
     except Course.DoesNotExist:
