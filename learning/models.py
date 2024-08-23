@@ -37,7 +37,7 @@ class Course(models.Model):
 
 class Announcement(models.Model):
     title = models.CharField(max_length=256)
-    body = models.CharField(max_length=10240)
+    body = models.TextField(max_length=10240)
     timestamp = models.DateTimeField(auto_now_add=True)
     course = models.ForeignKey('Course', on_delete=models.CASCADE,
                                related_name='announcements')
@@ -57,7 +57,7 @@ class Announcement(models.Model):
 
 class Assignment(models.Model):
     title = models.CharField(max_length=256)
-    body = models.CharField(max_length=10240)
+    body = models.TextField(max_length=10240)
     timestamp = models.DateTimeField(auto_now_add=True)
     course = models.ForeignKey('Course', on_delete=models.CASCADE,
                                related_name='assignments')
@@ -128,6 +128,7 @@ class Submission(models.Model):
         return {
             "id": self.id,
             "studentID": self.student.id,
+            "studentName": self.student.__str__(),
             "courseID": self.course.id,
             "assignmentName": self.assignment.title,
             "timestamp": f"{self.timestamp.month}/{self.timestamp.day}/{self.timestamp.year}, {self.timestamp.time().strftime("%H:%M")}",

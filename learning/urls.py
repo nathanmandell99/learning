@@ -10,12 +10,14 @@ urlpatterns = [
     path("course/<int:course_id>", views.course, name="course"),
     path("course/new", views.new_course, name="newcourse"),
 
-    # APIs
+    # API routes
 
     path("course/<int:course_id>/announcements",
          views.get_announcements, name="get_announcements"),
     path("course/<int:course_id>/announcements/<int:ann_id>",
          views.get_announcements, name="get_announcement"),
+    path("course/<int:course_id>/announcements/<int:ann_id>/edit",
+         views.edit_announcement, name="edit_announcement"),
 
     path("course/<int:course_id>/assignments",
          views.get_assignments, name="get_assignments"),
@@ -25,6 +27,8 @@ urlpatterns = [
          views.get_attachment, name="get_attachment"),
     path("course/<int:course_id>/assignments/<int:assn_id>/submit",
          views.submit_assignment, name="submit_assignment"),
+    path("course/<int:course_id>/assignments/<int:assn_id>/edit",
+         views.edit_assignment, name="edit_assignment"),
 
     path("course/<int:course_id>/submissions/<int:student_id>",
          views.get_submissions, name="get_submissions"),
@@ -32,7 +36,11 @@ urlpatterns = [
          views.get_submissions, name="get_submission"),
     path("course/<int:course_id>/submissions/<int:sbmsn_id>/attachment",
          views.get_attachment, name="get_sbmsn_attachment"),
+    path("course/<int:course_id>/submissions/all",
+         views.get_all_submissions, name="get_all_submissions"),
 
     path("course/<int:course_id>/front-page",
-         views.get_front_page, name="get_front_page")
+         views.get_front_page, name="get_front_page"),
+    path("course/<int:course_id>/front-page/edit",
+         views.edit_front_page, name="edit_front_page")
 ]

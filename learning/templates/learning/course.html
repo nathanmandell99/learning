@@ -18,12 +18,10 @@
 <div class="content container">
   <div class="title">
     <h2>{{ course.title }}</h2>
+    <p><small>Instructor: {{ course.instructor }}</small></p>
   </div>
 
   <div id="content-view">
-  {% if is_instructor %}
-  <p>You are an instructor!</p>
-  {% endif %}
   </div>
 </div>
 
@@ -37,6 +35,7 @@
   const isEnrolled = ("{{ is_student }}" === "True") ? true : false;
   const isInstructor = ("{{ is_instructor }}" === "True") ? true : false;
 </script>
+<script src="https://unpkg.com/turndown/dist/turndown.js"></script>
 <script src="{% static 'learning/course.js' %}"></script>
 {% endblock %}
 {% endif %}
