@@ -36,6 +36,7 @@
   const isInstructor = ("{{ is_instructor }}" === "True") ? true : false;
 </script>
 <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+<script src="{% static 'learning/eventdelegator.js' %}"></script>
 <script src="{% static 'learning/course.js' %}"></script>
 {% endblock %}
 {% endif %}

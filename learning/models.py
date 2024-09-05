@@ -52,7 +52,7 @@ class Announcement(models.Model):
         }
 
     def __str__(self):
-        return f"{self.course.title}: {self.title}"
+        return f" ({self.id}) {self.course.title}: {self.title}"
 
 
 class Assignment(models.Model):
@@ -63,7 +63,7 @@ class Assignment(models.Model):
                                related_name='assignments')
 
     attachment = models.FileField(
-        upload_to=utils.get_path_assignment, blank=True)
+        upload_to=utils.get_path_assignment, blank=True, null=True)
 
     def serialize(self):
         if self.attachment:

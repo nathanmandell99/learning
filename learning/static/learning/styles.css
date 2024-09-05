@@ -10,6 +10,10 @@
   margin-block: 1rem;
 }
 
+/*#topbar {
+  position: fixed;
+}*/
+
 /* Adapted from: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_sidebar_responsive*/
 body {
   margin: 0;

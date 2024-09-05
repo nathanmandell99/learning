@@ -26,6 +26,80 @@ class CourseForm(forms.ModelForm):
         }
 
 
+@csrf_exempt
+@login_required
+def grade_submission(request, course_id, sbmsn_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+        submission = Submission.objects.get(pk=sbmsn_id)
+        if request.user.instructor == course.instructor:
+            data = json.loads(request.body)
+            grade = data.get('grade')
+            if int(grade) < 0 or int(grade) > 100:
+                return JsonResponse({"message": "Error: Invalid grade."})
+            comments = data.get('comments')
+            submission.grade = grade
+            submission.comments = comments
+            submission.graded = True
+            submission.save()
+            return JsonResponse({"message": "Submission successfully graded."})
+        else:
+            return JsonResponse({"message": "Error: You are not the instructor for this course."})
+    except Course.DoesNotExist:
+        return JsonResponse({"message": "Error: Course does not exist."},
+                            status=400)
+    except Assignment.DoesNotExist:
+        return JsonResponse({"message": "Error: Submission does not exist."},
+                            status=400)
+
+
+@csrf_exempt
+@login_required
+def new_assignment(request, course_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+        if request.user.instructor == course.instructor:
+            assn_title = request.POST['assn_title']
+            assn_body = request.POST['assn_body']
+            try:
+                attachment = request.FILES['attachment']
+            except:
+                attachment = None
+            new_assn = Assignment(title=assn_title, body=assn_body,
+                                  attachment=attachment, course=course)
+            new_assn.save()
+            return JsonResponse({"message": "Assignment successfully created.",
+                                 "assn_id": new_assn.id}, status=200)
+
+    except Course.DoesNotExist:
+        return JsonResponse({"message": "Error: Course does not exist."},
+                            status=400)
+
+
+@csrf_exempt
+@login_required
+def new_announcement(request, course_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+        if request.user.instructor == course.instructor:
+            # Proceed
+            data = json.loads(request.body)
+            ann_body = data.get("ann_body")
+            ann_title = data.get("ann_title")
+            new_ann = Announcement(
+                body=ann_body, title=ann_title, course=course)
+            new_ann.save()
+            print(new_ann.id)
+            return JsonResponse({"message": "Announcement successfully created.",
+                                "ann_id": new_ann.id}, status=200)
+        else:
+            return JsonResponse({"message": "Error: You are not the instructor for this course."},
+                                status=400)
+    except Course.DoesNotExist:
+        return JsonResponse({"message": "Error: Course does not exist."},
+                            status=400)
+
+
 # We're going to get the potential new attachment with:
 # attachment = request.FILES['attachment']
 @csrf_exempt
@@ -114,25 +188,28 @@ def get_all_submissions(request, course_id):
 def get_submissions(request, course_id, student_id=None, sbmsn_id=None):
     try:
         course = Course.objects.get(pk=course_id)
-        if sbmsn_id:
-            submission = Submission.objects.get(pk=sbmsn_id)
-            if submission.student == request.user.student or course.instructor == request.user.instructor:
-                return JsonResponse({"submission": submission.serialize()})
+        if request.user.instructor == course.instructor or request.user.student in course.students.all():
+            if sbmsn_id:
+                submission = Submission.objects.get(pk=sbmsn_id)
+                if submission.student == request.user.student or course.instructor == request.user.instructor:
+                    return JsonResponse({"submission": submission.serialize()})
+                else:
+                    return JsonResponse(
+                        {"message": "Error: Submission does not belong to user making request."},
+                        status=400)
             else:
-                return JsonResponse(
-                    {"message": "Error: Submission does not belong to user making request."},
-                    status=400)
+                student = Student.objects.get(pk=student_id)
+                if student == request.user.student or course.instructor == request.user.instructor:
+                    submissions = Submission.objects.filter(
+                        course=course, student=student)
+                    return JsonResponse({"submissions": [
+                        sbmsn.serialize() for sbmsn in submissions]}, status=200)
+                else:
+                    return JsonResponse(
+                        {"message": "Error: Submissions do not belong to user making request."},
+                        status=400)
         else:
-            student = Student.objects.get(pk=student_id)
-            if student == request.user.student or course.instructor == request.user.instructor:
-                submissions = Submission.objects.filter(
-                    course=course, student=student)
-                return JsonResponse({"submissions": [
-                    sbmsn.serialize() for sbmsn in submissions]}, status=200)
-            else:
-                return JsonResponse(
-                    {"message": "Error: Submissions do not belong to user making request."},
-                    status=400)
+            return JsonResponse({"message": "Error: You are not enrolled in this course."})
 
     except Submission.DoesNotExist:
         return JsonResponse({"message": "Error: Submission does not exist."},
@@ -149,7 +226,7 @@ def get_submissions(request, course_id, student_id=None, sbmsn_id=None):
 def submit_assignment(request, course_id, assn_id):
     student = request.user.student
     course = Course.objects.get(pk=course_id)
-    if student in course.students:
+    if student in course.students.all():
         assignment = Assignment.objects.get(pk=assn_id)
         print(assignment.submissions.filter(student=student))
         if assignment.submissions.filter(student=student).count() != 0:
@@ -167,19 +244,26 @@ def submit_assignment(request, course_id, assn_id):
         submission.save()
         return redirect("course", course_id)
     else:
-        # You are not a student for this class and cannot submit assignments!
-        pass
+        return JsonResponse({"message": "Error: You are not enrolled in this course."})
 
 
 @login_required
 def get_attachment(request, course_id, assn_id=None, sbmsn_id=None):
-    if sbmsn_id:
-        submission = Submission.objects.get(pk=sbmsn_id)
-        attachment = submission.attachment
-    else:
-        assignment = Assignment.objects.get(pk=assn_id)
-        attachment = assignment.attachment
-    return FileResponse(open(attachment.url[1:], "rb"), as_attachment=True)
+    try:
+        course = Course.objects.get(pk=course_id)
+        if request.user.instructor == course.instructor or request.user.student in course.students.all():
+            if sbmsn_id:
+                submission = Submission.objects.get(pk=sbmsn_id)
+                attachment = submission.attachment
+            else:
+                assignment = Assignment.objects.get(pk=assn_id)
+                attachment = assignment.attachment
+            return FileResponse(open(attachment.url[1:], "rb"), as_attachment=True)
+        else:
+            return JsonResponse({"message": "Error: You are not enrolled in this course."})
+    except Course.DoesNotExist:
+        return JsonResponse({"message": "Error: Course does not exist."},
+                            status=400)
 
 
 # Get assignments for previewing. We should also get grades
@@ -187,52 +271,55 @@ def get_attachment(request, course_id, assn_id=None, sbmsn_id=None):
 @login_required
 def get_assignments(request, course_id, assn_id=None):
     try:
-        if assn_id:
-            assignment = Assignment.objects.get(pk=assn_id)
-            try:
-                assignment.body = markdowner.convert(assignment.body)
-                submission = assignment.submissions.get(
-                    student=request.user.student)
-                grade = submission.grade
-                print("Submission exists")
-                return JsonResponse(
-                    {"assignment": assignment.serialize(),
-                     "submitted": True,
-                     "grade": grade}, status=200)
-            except Submission.DoesNotExist:
-                print("No submission")
-                return JsonResponse(
-                    {"assignment": assignment.serialize(),
-                     "submitted": False}, status=200)
-
-        else:
-            course = Course.objects.get(pk=course_id)
-            assignments = Assignment.objects.filter(course=course)
-            assignments = assignments.order_by("-timestamp").all()
-            assn_list = []
-            for assn in assignments:
-                # This data depends on the user who made the request
-                # and thus cannot be accounted for in the serialze function.
-                # It must be retrieved when the request is made.
-                serialized = assn.serialize()
+        course = Course.objects.get(pk=course_id)
+        if request.user.instructor == course.instructor or request.user.student in course.students.all():
+            if assn_id:
+                assignment = Assignment.objects.get(pk=assn_id)
                 try:
-                    submission = assn.submissions.get(
+                    assignment.body = markdowner.convert(assignment.body)
+                    submission = assignment.submissions.get(
                         student=request.user.student)
                     grade = submission.grade
-                    if grade is None:
-                        serialized['grade'] = "None"
-                    else:
-                        serialized['grade'] = grade
-
-                    serialized['submitted'] = True
+                    print("Submission exists")
+                    return JsonResponse(
+                        {"assignment": assignment.serialize(),
+                         "submitted": True,
+                         "grade": grade}, status=200)
                 except Submission.DoesNotExist:
-                    serialized['grade'] = "None"
-                    serialized['submitted'] = False
+                    print("No submission")
+                    return JsonResponse(
+                        {"assignment": assignment.serialize(),
+                         "submitted": False}, status=200)
 
-                assn_list.append(serialized)
+            else:
+                assignments = Assignment.objects.filter(course=course)
+                assignments = assignments.order_by("-timestamp").all()
+                assn_list = []
+                for assn in assignments:
+                    # This data depends on the user who made the request
+                    # and thus cannot be accounted for in the serialze function.
+                    # It must be retrieved when the request is made.
+                    serialized = assn.serialize()
+                    try:
+                        submission = assn.submissions.get(
+                            student=request.user.student)
+                        grade = submission.grade
+                        if grade is None:
+                            serialized['grade'] = "None"
+                        else:
+                            serialized['grade'] = grade
 
-            return JsonResponse({"assignments": assn_list},
-                                status=200)
+                        serialized['submitted'] = True
+                    except Submission.DoesNotExist:
+                        serialized['grade'] = "None"
+                        serialized['submitted'] = False
+
+                    assn_list.append(serialized)
+
+                return JsonResponse({"assignments": assn_list},
+                                    status=200)
+        else:
+            return JsonResponse({"message": "Error: You are not enrolled in this course."})
 
     except Course.DoesNotExist:
         return JsonResponse({"error": "Course does not exist."}, status=400)
@@ -244,19 +331,22 @@ def get_assignments(request, course_id, assn_id=None):
 @login_required
 def get_announcements(request, course_id, ann_id=None):
     try:
-        if ann_id:
-            announcement = Announcement.objects.get(pk=ann_id)
-            announcement.body = markdowner.convert(announcement.body)
-            return JsonResponse(announcement.serialize())
+        course = Course.objects.get(pk=course_id)
+        if request.user.instructor == course.instructor or request.user.student in course.students.all():
+            if ann_id:
+                announcement = Announcement.objects.get(pk=ann_id)
+                announcement.body = markdowner.convert(announcement.body)
+                return JsonResponse(announcement.serialize())
 
+            else:
+                announcements = Announcement.objects.filter(course=course)
+                announcements = announcements.order_by("-timestamp").all()
+                print(announcements)
+                return JsonResponse({"announcements": [
+                                    ann.serialize() for ann in announcements]},
+                                    status=200)
         else:
-            course = Course.objects.get(pk=course_id)
-            announcements = Announcement.objects.filter(course=course)
-            announcements = announcements.order_by("-timestamp").all()
-            print(announcements)
-            return JsonResponse({"announcements": [
-                                ann.serialize() for ann in announcements]},
-                                status=200)
+            return JsonResponse({"message": "Error: You are not enrolled in this course."})
 
     except Course.DoesNotExist:
         return JsonResponse({"error": "Course does not exist."}, status=400)
@@ -282,8 +372,11 @@ def new_course(request):
 def get_front_page(request, course_id):
     try:
         course = Course.objects.get(pk=course_id)
-        course.front_page = markdowner.convert(course.front_page)
-        return JsonResponse({"front_page": course.front_page}, status=200)
+        if request.user.instructor == course.instructor or request.user.student in course.students.all():
+            course.front_page = markdowner.convert(course.front_page)
+            return JsonResponse({"front_page": course.front_page}, status=200)
+        else:
+            return JsonResponse({"error": "Course does not exist."}, status=400)
     except Course.DoesNotExist:
         return JsonResponse({"error": "Course does not exist."}, status=400)
 

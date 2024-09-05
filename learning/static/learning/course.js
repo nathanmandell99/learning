@@ -25,147 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })
 
-async function eventDelegator() {
-  document.addEventListener('click', async (event) => {
-    if (event.target.id.includes("ann-id")) {
-      let annId = event.target.dataset.annId;
-      displayAnnouncement(annId);
-    }
-    else if (event.target.id === "back-ann") {
-      displayAnnouncements();
-    }
-    else if (event.target.id.includes("assn-id")) {
-      let assnId = event.target.dataset.assnId;
-      displayAssignment(assnId);
-    }
-    else if (event.target.id === "back-assn") {
-      displayAssignments();
-    }
-    else if (event.target.id.includes("sbmsn-id")) {
-      let sbmsnId = event.target.dataset.sbmsnId;
-      let sbmsnStudentId = event.target.dataset.studentId;
-      let response = await fetch(`/course/${courseID}/submissions/${sbmsnStudentId}/${sbmsnId}`);
-      let result = await response.json();
-      console.log(result);
-      let submission = result['submission'];
-      displaySubmission(submission);
-    }
-    else if (event.target.id === "back-sbmsn") {
-      displaySubmissions();
-    }
-    else if (event.target.id === "edit-syllabus") {
-
-      let currentSyllabus = document.querySelector('#syllabus-body');
-      let currentBody = currentSyllabus.innerHTML;
-
-      let turndownService = new TurndownService()
-      let markdown = turndownService.turndown(currentBody)
-
-      courseView.innerHTML = `
-        <textarea class="form-control" id="new-syllabus-body">${markdown}</textarea>
-        <button class="btn btn-primary" id="send-syllabus-edit">Submit Edit</button>
-      `;
-    }
-    else if (event.target.id === "send-syllabus-edit") {
-      let newSyllabus = document.querySelector('#new-syllabus-body').value;
-
-      try {
-        let response = await fetch(`/course/${courseID}/front-page/edit`, {
-          method: "PUT",
-          body: JSON.stringify({
-            new_front_page: newSyllabus
-          })
-        });
-        let result = await response.json();
-
-        console.log(result);
-        displaySyllabus();
-
-      }
-      catch (error) {
-        console.log(error);
-      }
-    }
-    else if (event.target.id === "edit-ann") {
-
-      let currentAnn = document.querySelector('#ann-body');
-      let annID = currentAnn.dataset.annId;
-      console.log(`annID: ${annID}`);
-      let currentBody = currentAnn.innerHTML;
-
-      //console.log(currentBody);
-
-      let turndownService = new TurndownService();
-      let markdown = turndownService.turndown(currentBody);
-
-      courseView.innerHTML = `
-        <textarea class="form-control" data-ann-id="${annID}" id="new-ann-body">${markdown}</textarea>
-        <button class="btn btn-primary" id="send-ann-edit">Submit Edit</button>
-      `;
-    }
-    else if (event.target.id === "send-ann-edit") {
-      let newBody = document.querySelector('#new-ann-body');
-      let annID = newBody.dataset.annId;
-      console.log(`annID: ${annID}`);
-
-      try {
-        let response = await fetch(`/course/${courseID}/announcements/${annID}/edit`, {
-          method: "PUT",
-          body: JSON.stringify({
-            new_ann_body: newBody.value
-          })
-        });
-        let result = await response.json();
-
-        console.log(result);
-
-        displayAnnouncement(annID);
-      }
-      catch (error) {
-        console.log(error);
-      }
-    }
-    else if (event.target.id === "edit-assn") {
-      let currentAssn = document.querySelector('#assn-body');
-      let assnID = currentAssn.dataset.annId;
-      let currentBody = currentAssn.innerHTML;
-
-      let turndownService = new TurndownService();
-      let markdown = turndownService.turndown(currentBody);
-
-      // Setting this up as a form makes it easier to handle the attachment
-      courseView.innerHTML = `
-        <form action="/course/${courseID}/assignments/${assnID}/edit" method="POST" enctype="multipart/form-data">
-          <textarea name="new_assn_body" class="form-control" data-assn-id="${assnID}" id="new-assn-body">${markdown}</textarea>
-          <input type="file" name="attachment" /> <br>
-          <button class="btn btn-primary" id="send-assn-edit">Submit Edit</button>
-        </form>
-      `;
-    }
-    else if (event.target.id === "send-assn-edit") {
-      event.preventDefault();
-      formElem = event.target.closest('form');
-      let form = new FormData(formElem);
-      let assnID = document.querySelector('#new-assn-body').dataset.assnId
-      console.log(form);
-      try {
-        let response = await fetch(`/course/${courseID}/assignments/${assnID}/edit`, {
-          method: 'POST',
-          body: form
-        });
-        let result = response.json();
-        console.log(result);
-      }
-      catch (error) {
-        console.log(error);
-      }
-      displayAssignment(assnID);
-    }
-
-  });
-}
-
-// Perhaps this should be refactored to call a backend route...
 async function displaySyllabus() {
   // console.log('userID');
   document.querySelector('.sidebar .active').classList.remove('active');
@@ -193,7 +52,7 @@ async function displaySyllabus() {
 
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 
 }
@@ -253,9 +112,14 @@ async function displayAnnouncements() {
     }
     courseView.append(annWrapper);
 
+    if (isInstructor) {
+      courseView.innerHTML += `
+      <button class="btn btn-primary" id="create-ann-view">Create New Announcement</button>
+    `;
+    }
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 
 }
@@ -284,7 +148,7 @@ async function displayAnnouncement(annId) {
 
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 }
 
@@ -343,10 +207,15 @@ async function displayAssignments() {
 
     }
     courseView.append(assnWrapper);
+    if (isInstructor) {
+      courseView.innerHTML += `
+      <button class="btn btn-primary" id="create-assn-view">Create New Assignment</button>
+    `;
+    }
 
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 }
 
@@ -404,7 +273,7 @@ async function displayAssignment(assnId) {
 
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 
 }
@@ -525,47 +394,107 @@ async function displaySubmissions() {
     document.querySelector('#ungraded').append(ungradedWrapper);
   }
   catch (error) {
-    console.log(error);
+    alert(error);
   }
 }
 
-async function displaySubmission(submission) {
-  console.log(submission);
-  courseView.innerHTML = `
-      <h4>Submission for ${submission['assignmentName']}</h4>
-      <p>Student: ${submission['studentName']}</p>
-      <p><small>Submitted ${submission['timestamp']}</small></p>
+async function displaySubmission(sbmsnId, sbmsnStudentId) {
+  try {
+    let response = await fetch(`/course/${courseID}/submissions/${sbmsnStudentId}/${sbmsnId}`);
+    let result = await response.json();
+    console.log(result);
+    let submission = result['submission'];
+    courseView.innerHTML = `
+        <h4>Submission for ${submission['assignmentName']}</h4>
+        <p>Student: ${submission['studentName']}</p>
+        <p><small>Submitted ${submission['timestamp']}</small></p>
+        `;
+
+    if (submission['graded']) {
+      courseView.innerHTML += `
+        <h5>Grade:</h5>
+        <p>${submission['grade']}/100</p>
+        <h5>Instructor comments:</h5>
+        <p>${submission['comments']}</p>
       `;
+    }
+    else {
+      courseView.innerHTML += `
+      <h5><strong>Assignment currently awaiting grading.</strong></h5>
+      `;
+    }
+    courseView.innerHTML +=
+      `<hr>
+      <h5>Submission:</h5>
+      <p>${submission['body']}</p>
+      <h6>Attachment:</h6>`;
 
-  if (submission['graded']) {
-    courseView.innerHTML += `
-      <h5>Grade:</h5>
-      <p>${submission['grade']}/100</p>
-      <h5>Instructor comments:</h5>
-      <p>${submission['comments']}</p>
-    `;
-  }
-  else {
-    courseView.innerHTML += `
-    <h5><strong>Assignment currently awaiting grading.</strong></h5>
-    `;
-  }
-  courseView.innerHTML +=
-    `<hr>
-    <h5>Submission:</h5>
-    <p>${submission['body']}</p>
-    <h6>Attachment:</h6>`;
+    if (submission['attachment'] != "None") {
+      courseView.innerHTML += `
+        <p><a download href="/course/${courseID}/submissions/${submission['id']}/attachment">
+          ${submission['attachment']}</a></p>
+      `;
+    }
+    else {
+      courseView.innerHTML += `
+        <p>None.</p>
+      `;
+    }
+    if (isInstructor && !submission['graded']) {
+      // Display grading form
+      courseView.innerHTML += `
+      <hr>
+      <h5>Grade Assignment</h5>
+      <div class="mb-3">
+        <p>Grade:</p>
+        <input id="grade" type="number" class="form-control-sm"></input>
+        <br>
+        <p>Comments:</p>
+        <textarea id="comments" class="form-control" rows="3"></textarea>
+        <br>
+        <input data-student-id="${sbmsnStudentId}" data-sbmsn-id="${submission['id']}" class="btn btn-primary" id="sbmit-grade" type="submit" value="Submit Grade">
+      </div>
+      `
+    }
+    courseView.innerHTML += `<p><a id="back-sbmsn" href="#">Back</a></p>`;
 
-  if (submission['attachment'] != "None") {
-    courseView.innerHTML += `
-      <p><a download href="/course/${courseID}/submissions/${submission['id']}/attachment">
-        ${submission['attachment']}</a></p>
-    `;
   }
-  else {
-    courseView.innerHTML += `
-      <p>None.</p>
-    `;
+  catch (error) {
+    alert(error);
   }
-  courseView.innerHTML += `<p><a id="back-sbmsn" href="#">Back</a></p>`;
+}
+
+async function newAnnouncementView() {
+  courseView.innerHTML = `
+    <h4>New Announcement</h4>
+    <p>You can create a new announcement here. Note that the body supports markdown.</p>
+    <div class="mb-3">
+      <label for="new-ann-title" class="form-label">Announcement Title</label>
+      <input class="form-control" id="new-ann-title">
+    </div>
+    <div class="mb-3">
+      <label for="new-ann-body" class="form-label">Announcement Body</label>
+      <textarea class="form-control" id="new-ann-body" rows="8"></textarea>
+    </div>
+    <button class="btn btn-primary" id="post-new-ann">Post Announcement</button>
+    <p><a href="#" id="back-ann">Back</a></p>
+  `;
+}
+
+async function newAssignmentView() {
+  courseView.innerHTML = `
+    <h4>New Assignment</h4>
+    <p>You can create a new assignment here. Note that the body supports markdown. Attachment is optional.</p>
+    <div class="mb-3">
+      <form id="new-assn-form">
+        <label for="assn-title" class="form-label">Assignment Title</label>
+        <input name="assn_title" class="form-control" id="assn-title">
+        <label for="assn-body" class="form-label">Assignment Body</label>
+        <textarea name="assn_body" class="form-control" id="assn-body" rows="8"></textarea> <br>
+        <input name="attachment" type="file" /> <br>
+      </form>
+    </div>
+    <button class="btn btn-primary" id="post-new-assn">Post Assignment</button>
+    <p><a href="#" id="back-assn">Back</a></p>
+  `;
 }
