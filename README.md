@@ -1,5 +1,6 @@
 # Learning
-Mockup learning management webapp in the vein of Canvas or Blackboard.
+Mockup learning management webapp in the vein of Canvas or Blackboard. Written using Django and
+plain HTML/CSS/JavaScript.
 
 Users can create courses. Each course has a front page/syllabus, announcements, assignments, and submissions.
 
@@ -19,22 +20,6 @@ neither an instructor nor a student for.
 
 The course page is only one page. Different views within the course page are accessed through
 JavaScript, which makes API calls to the backend running in Python.
-
-# Distinctiveness and Complexity
-
-This project is certainly distinct in functionality from previous projects. A learning management
-application quite simply does not do the same thing as a search engine, social media network,
-email service, auction service, or encyclopedia. I have taken inspiration from some of these 
-previous projects (for example, implementing Markdown), but the function of any constitutive
-piece is not the same as the previous projects. 
-
-Probably what sets this project apart from the previous ones is the submission and grading
-system. File attachments are supported for assignments and submissions, something not covered
-in previous course material or projects. Overall, I would say that this project combines 
-functionality from many of the previous projects into one. The single-page design of Mail 
-is carried over into the course view, where everything is accessed through JavaScript, without
-loading a new template. The system of allowing users to create objects over which they have
-authority is carried over from Commerce. 
 
 # Files
 
