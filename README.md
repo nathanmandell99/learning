@@ -84,4 +84,4 @@ within the file.
 # How to Run 
 
 `python manage.py runserver` is sufficient to run the project on the Django dev server. It can
-then be accessed from localhost:8000, the same as previous projects in the course.
+then be accessed from localhost:8000.
