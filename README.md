@@ -85,10 +85,3 @@ within the file.
 
 `python manage.py runserver` is sufficient to run the project on the Django dev server. It can
 then be accessed from localhost:8000, the same as previous projects in the course.
-
-# Additional Information
-
-I previously indicated that the sidebar for the course page was adapted from w3schools, but I 
-am reiterating it here. The citation and link to the original is accessible in `styles.css`.
-If this is not acceptable, I will gladly refactor the navbar for the course page, and apologize
-if that is the case. I do not see this as being a substantial or essential part of the project.
