@@ -79,8 +79,8 @@ new information such as a submission or editing existing information such as an 
 ## styles.css 
 
 Standard CSS file. Note that this contains code adapted from w3schools; the citation is located
-within the file.
-
+within the file. It should be noted that this repo is vulnerable to CSRF attacks and should not
+be deployed publicly as-is.
 # How to Run 
 
 `python manage.py runserver` is sufficient to run the project on the Django dev server. It can
